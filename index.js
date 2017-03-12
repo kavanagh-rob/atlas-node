@@ -1,18 +1,28 @@
 var request = require('request'); 
-
+var express = require('express')
 var cheerio = require('cheerio');
 var finishedLoading = false;
+ var racesMeetingsArray = [];
 var racecardUrl = "http://www.sportinglife.com/racing/racecards";
 var resultsUrl = "http://www.sportinglife.com/racing/fast-results";
 
 getRacecards(racecardUrl);
 //getResults(resultsUrl);
 
+var server = express()
+
+server.get('/atlas', function (req, res) {
+  res.send(racesMeetingsArray);
+})
+
+server.listen(3000, function () {
+  console.log('Example app listening on port 3000!')
+})
+
 function getRacecards(url){
     request(url, function (error, response, html) {
         if (!error && response.statusCode == 200) {
             var $ = cheerio.load(html);var racesArray = [];
-            var racesMeetingsArray = [];
             var meetingIndex = 0;
               var meetingSections = $('.hr-meeting-container');
                 meetingSections.each(function(i, meetingSection){
@@ -35,7 +45,6 @@ function getRacecards(url){
                             meetingIndex++;
                         }  
                 });
-            console.log(racesMeetingsArray);
         }
     });
 }
