@@ -2,24 +2,52 @@ var request = require('request');
 var express = require('express')
 var cheerio = require('cheerio');
 var finishedLoading = false;
- var racesMeetingsArray = [];
+var baceUrl = "http://www.sportinglife.com";
 var racecardUrl = "http://www.sportinglife.com/racing/racecards";
 var resultsUrl = "http://www.sportinglife.com/racing/fast-results";
 
-getRacecards(racecardUrl);
+var raceDaysArray = [];
+var racesDaysMeetingArray = [];
+
+//getRacecards(racecardUrl);
 //getResults(resultsUrl);
+getRaceDays(racecardUrl);
 
 var server = express()
 
-server.get('/atlas', function (req, res) {
-  res.send(racesMeetingsArray);
+server.get('/days', function (req, res) {
+  res.send(raceDaysArray);
+//    res.send(racesMeetingsArray);
+})
+
+server.get('/meetings', function (req, res) {
+    res.send(racesDaysMeetingArray);
 })
 
 server.listen(3000, function () {
-  console.log('Example app listening on port 3000!')
+  console.log('Atlas App listening on port 3000!')
 })
 
-function getRacecards(url){
+function getRaceDays(url){
+    request(url, function (error, response, html) {
+        if (!error && response.statusCode == 200) {
+            var $ = cheerio.load(html);
+            var days = $('.hr-racing-racecards nav ul li a');
+                days.each(function(i, days){
+                    var day = {};
+                    day.name =days.children[0].data;
+                    day.uri = baceUrl+days.attribs.href;
+                    raceDaysArray[i] = day;
+                    getRacecards(day.uri, day.name, i);
+                });
+        }
+    });
+}
+
+function getRacecards(url, day, index){
+    var racesMeetingsParent = {};
+    racesMeetingsParent.meetings = [];
+    racesMeetingsParent.day = day;
     request(url, function (error, response, html) {
         if (!error && response.statusCode == 200) {
             var $ = cheerio.load(html);var racesArray = [];
@@ -41,10 +69,11 @@ function getRacecards(url){
                             var meeting = {};
                             meeting.name = courseName;
                             meeting.races = racesArray;
-                            racesMeetingsArray[meetingIndex] = meeting;
+                            racesMeetingsParent.meetings[meetingIndex] = meeting;
                             meetingIndex++;
                         }  
                 });
+            racesDaysMeetingArray[index] = racesMeetingsParent;
         }
     });
 }
@@ -130,6 +159,7 @@ var britishRacecourses = [
     "Lingfield",  
     "Ludlow",  
     "MarketRasen",  
+    "Market",  
     "Musselburgh",  
     "Newbury",  
     "Newcastle",  
